@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="src/assets/logo.png" alt="Todly logo" width="120" />
+</p>
+
 # Todly
 
 A modern desktop front-end for a local [ComfyUI](https://github.com/comfyanonymous/ComfyUI) server. Prompt in, image out — no node graph, no raw JSON.
