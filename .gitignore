@@ -1,0 +1,11 @@
+node_modules
+dist
+.pnpm-store
+.pnpm-cache
+.cargo-home
+src-tauri/target
+data/config.json
+data/batches
+data/presets/.seeded
+Todly.lnk
+*.local

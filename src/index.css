@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Segoe UI Variable Text", "Segoe UI", "Inter", system-ui, sans-serif;
+
+  --color-ink-950: #0b0d12;
+  --color-ink-900: #10131b;
+  --color-ink-850: #141823;
+  --color-ink-800: #1a1f2d;
+  --color-ink-700: #242b3d;
+  --color-ink-600: #313a52;
+  --color-ink-400: #5b6680;
+  --color-ink-300: #8891a8;
+  --color-ink-200: #b8bfd0;
+  --color-ink-100: #e2e5ee;
+
+  --color-accent-600: #7c3aed;
+  --color-accent-500: #8b5cf6;
+  --color-accent-400: #a78bfa;
+  --color-accent-300: #c4b5fd;
+
+  --color-glow: #38bdf8;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  @apply bg-ink-950 text-ink-100 font-sans antialiased select-none;
+}
+
+input,
+textarea {
+  @apply select-text;
+}
+
+/* subtle scrollbars */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--color-ink-600);
+  border-radius: 8px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--color-ink-400);
+}
+
+@utility glass {
+  background: color-mix(in srgb, var(--color-ink-850) 78%, transparent);
+  backdrop-filter: blur(14px);
+  border: 1px solid color-mix(in srgb, var(--color-ink-600) 45%, transparent);
+}
+
+@utility card {
+  @apply glass rounded-2xl shadow-lg shadow-black/30;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-ink-800) 25%,
+    var(--color-ink-700) 50%,
+    var(--color-ink-800) 75%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.6s infinite linear;
+}
