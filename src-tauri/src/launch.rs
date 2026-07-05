@@ -1,5 +1,5 @@
-use std::io::{BufRead, BufReader};
 use std::net::{TcpStream, ToSocketAddrs};
+use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::sync::Mutex;
 use std::time::Duration;
@@ -63,6 +63,34 @@ pub fn comfy_launch(
         ));
     }
 
+    // ComfyUI is meant to keep running after Todly closes, so its stdout/stderr
+    // must NOT be an in-memory pipe read by a thread in this process — once
+    // that thread (and this process) goes away, the pipe's read end dies, and
+    // the next thing ComfyUI writes (e.g. a tqdm progress update mid-sample)
+    // hits a broken pipe and crashes the whole node. Redirecting to a real
+    // file on disk keeps the write end valid for ComfyUI's entire lifetime,
+    // independent of whether Todly — or this specific launch — is still around.
+    let log_dir = crate::commands::data_dir();
+    if let Err(e) = std::fs::create_dir_all(&log_dir) {
+        *state.0.lock().unwrap() = false;
+        return Err(format!("Failed to create {}: {e}", log_dir.display()));
+    }
+    let log_path = log_dir.join("comfy-boot.log");
+    let log_file = match std::fs::File::create(&log_path) {
+        Ok(f) => f,
+        Err(e) => {
+            *state.0.lock().unwrap() = false;
+            return Err(format!("Failed to create {}: {e}", log_path.display()));
+        }
+    };
+    let log_file_err = match log_file.try_clone() {
+        Ok(f) => f,
+        Err(e) => {
+            *state.0.lock().unwrap() = false;
+            return Err(format!("Failed to duplicate log file handle: {e}"));
+        }
+    };
+
     let mut cmd = Command::new(&python_exe);
     cmd.arg("-s")
         .arg(&main_py)
@@ -75,8 +103,8 @@ pub fn comfy_launch(
         .env("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
         .env("CUDA_VISIBLE_DEVICES", "0")
         .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
+        .stdout(Stdio::from(log_file))
+        .stderr(Stdio::from(log_file_err));
 
     #[cfg(windows)]
     {
@@ -93,22 +121,7 @@ pub fn comfy_launch(
         }
     };
 
-    if let Some(out) = child.stdout.take() {
-        let app2 = app.clone();
-        std::thread::spawn(move || {
-            for line in BufReader::new(out).lines().map_while(Result::ok) {
-                let _ = app2.emit("comfy-boot-log", line);
-            }
-        });
-    }
-    if let Some(err) = child.stderr.take() {
-        let app2 = app.clone();
-        std::thread::spawn(move || {
-            for line in BufReader::new(err).lines().map_while(Result::ok) {
-                let _ = app2.emit("comfy-boot-log", line);
-            }
-        });
-    }
+    tail_log_file(app.clone(), log_path);
 
     let app3 = app.clone();
     std::thread::spawn(move || {
@@ -122,4 +135,31 @@ pub fn comfy_launch(
     });
 
     Ok("launching".into())
+}
+
+/// Poll the log file for new lines and emit them for the sidebar boot log.
+/// This thread only serves this Todly session's UI — if it dies (e.g. the
+/// app closes), ComfyUI keeps writing to the file undisturbed either way.
+fn tail_log_file(app: AppHandle, path: PathBuf) {
+    use std::io::{Read, Seek, SeekFrom};
+    std::thread::spawn(move || {
+        let mut pos: u64 = 0;
+        let mut carry = String::new();
+        loop {
+            if let Ok(mut f) = std::fs::File::open(&path) {
+                if f.seek(SeekFrom::Start(pos)).is_ok() {
+                    let mut buf = String::new();
+                    if f.read_to_string(&mut buf).is_ok() && !buf.is_empty() {
+                        pos += buf.len() as u64;
+                        carry.push_str(&buf);
+                        while let Some(idx) = carry.find('\n') {
+                            let line: String = carry.drain(..=idx).collect();
+                            let _ = app.emit("comfy-boot-log", line.trim_end().to_string());
+                        }
+                    }
+                }
+            }
+            std::thread::sleep(Duration::from_millis(400));
+        }
+    });
 }

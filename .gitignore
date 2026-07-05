@@ -7,5 +7,6 @@ src-tauri/target
 data/config.json
 data/batches
 data/presets/.seeded
+data/comfy-boot.log
 Todly.lnk
 *.local

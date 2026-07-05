@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 /// `data` folder next to the running executable (so a portable copy of
 /// Todly is fully self-contained); override with the TODLY_DATA env var
 /// for development or multi-instance setups.
-fn data_dir() -> PathBuf {
+pub(crate) fn data_dir() -> PathBuf {
     if let Ok(dir) = std::env::var("TODLY_DATA") {
         return PathBuf::from(dir);
     }
