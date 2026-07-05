@@ -123,7 +123,11 @@ The **Models tab downloader** (direct URL + Civitai/Hugging Face search, auto-so
 
 ## Screenshots
 
-None included yet. If you add some, use real screen captures of the app — never a ComfyUI output PNG, since ComfyUI embeds the full prompt and workflow in the file's metadata.
+<p align="center">
+  <img src="docs/screenshot-generate.png" alt="Todly Generate screen" width="800" />
+</p>
+
+<sub>The Generate screen — prompt, aspect ratio, model/LoRA, and an optional Advanced section for steps/CFG/sampler.</sub>
 
 ## Status
 
