@@ -95,7 +95,6 @@ pub fn comfy_launch(
     cmd.arg("-s")
         .arg(&main_py)
         .arg("--windows-standalone-build")
-        .arg("--highvram")
         .current_dir(&comfy_path)
         .env_remove("ALL_PROXY")
         .env_remove("HTTP_PROXY")
